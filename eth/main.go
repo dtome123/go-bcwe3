@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -35,10 +36,11 @@ func (e *Ethereum) GetCurrentBlock() uint64 {
 	return blockNumber
 }
 
-func (e *Ethereum) GetBlockByNumber(blockNumber *big.Int) {
+func (e *Ethereum) GetBlockByNumber(blockNumber *big.Int) *types.Block {
 	block, err := e.Client.BlockByNumber(context.Background(), blockNumber)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(block)
+	
+	return block
 }
