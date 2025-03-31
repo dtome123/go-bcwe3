@@ -12,8 +12,8 @@ type Ethereum struct {
 	Client *ethclient.Client
 }
 
-func NewEthereum() *Ethereum {
-	client, err := ethclient.Dial("http://localhost:8545")
+func NewEthereum(dsn string) *Ethereum {
+	client, err := ethclient.Dial(dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
