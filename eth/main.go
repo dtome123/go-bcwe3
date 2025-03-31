@@ -3,6 +3,7 @@ package eth
 import (
 	"context"
 	"log"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -32,4 +33,12 @@ func (e *Ethereum) GetCurrentBlock() uint64 {
 		log.Fatal(err)
 	}
 	return blockNumber
+}
+
+func (e *Ethereum) GetBlockByNumber(blockNumber *big.Int) {
+	block, err := e.Client.BlockByNumber(context.Background(), blockNumber)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(block)
 }
