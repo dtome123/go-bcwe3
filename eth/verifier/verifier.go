@@ -16,29 +16,46 @@ var (
 	ErrUnsupportedType        = errors.New("unsupported signature type")
 	ErrInvalidSignatureLength = errors.New("invalid signature length")
 	ErrRecoverPublicKey       = errors.New("failed to recover public key")
+	ErrInvalidPayloadType     = errors.New("invalid payload type")
+	ErrPayloadIsEmpty         = errors.New("payload is empty")
 )
 
 type SignatureType int
 
 const (
-	SignatureLegacy SignatureType = iota
-	SignatureEIP712
+	SignaturePersonalSign SignatureType = iota
+	SignatureTypedData
 )
 
 type VerifyRequest struct {
 	SignatureType SignatureType
-	Message       string
-	TypedData     *apitypes.TypedData // only for EIP712
+	Payload       any
 	Signature     string
 	ExpectedAddr  string
 }
 
 func Verify(req *VerifyRequest) error {
 	switch req.SignatureType {
-	case SignatureLegacy:
-		return verifyLegacySignature(req.Message, req.Signature, req.ExpectedAddr)
-	case SignatureEIP712:
-		return verifyEIP712Signature(req.TypedData, req.Signature, req.ExpectedAddr)
+	case SignaturePersonalSign:
+		if msg, ok := req.Payload.(string); ok {
+			return verifyLegacySignature(msg, req.Signature, req.ExpectedAddr)
+		}
+
+		return ErrInvalidPayloadType
+	case SignatureTypedData:
+
+		switch v := any(req.Payload).(type) {
+		case apitypes.TypedData:
+			return verifyEIP712Signature(v, req.Signature, req.ExpectedAddr)
+		case *apitypes.TypedData:
+			if v == nil {
+				return ErrPayloadIsEmpty
+			}
+			return verifyEIP712Signature(*v, req.Signature, req.ExpectedAddr)
+		default:
+			return ErrInvalidPayloadType
+		}
+
 	default:
 		return ErrUnsupportedType
 	}
@@ -82,7 +99,7 @@ func verifyLegacySignature(message string, sigHex string, address string) error 
 	return nil
 }
 
-func verifyEIP712Signature(typedData *apitypes.TypedData, sigHex string, expectedAddrHex string) error {
+func verifyEIP712Signature(typedData apitypes.TypedData, sigHex string, expectedAddrHex string) error {
 
 	typedData.Types["EIP712Domain"] = []apitypes.Type{
 		{Name: "name", Type: "string"},

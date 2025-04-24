@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/dtome123/go-bcwe3/eth/verifier"
@@ -19,8 +20,8 @@ func main() {
 	sigHex := "0xbd51be0700eb411813268a5dc6e893fc8aa2326e82e9c405b30cd9acc65881b31f9a5b2aed01f854bd8c12a8cbfcceecb1175aedb18b7540bfc5c1dc4eb21ac71b" // 65 bytes (130 hex chars)
 
 	err := verifier.Verify(&verifier.VerifyRequest{
-		SignatureType: verifier.SignatureLegacy,
-		Message:       message,
+		SignatureType: verifier.SignaturePersonalSign,
+		Payload:       message,
 		Signature:     sigHex,
 		ExpectedAddr:  address,
 	})
@@ -36,7 +37,7 @@ func main() {
 	// EIP712
 	sigHex = "0xd1059fd1ce46b05c3f0287ba60f6eb7e3e8d10d70fd89acf7e93e873de537b760efd7caf781803e947c07f90f543e200f0e8e044b7ec5f2e75a1f7457df27ae31b" // 65 bytes (130 hex chars)
 
-	typedData := apitypes.TypedData{
+	typedData := &apitypes.TypedData{
 		Types: apitypes.Types{
 			"Person": []apitypes.Type{
 				{Name: "name", Type: "string"},
@@ -57,13 +58,13 @@ func main() {
 	}
 
 	err = verifier.Verify(&verifier.VerifyRequest{
-		SignatureType: verifier.SignatureEIP712,
-		TypedData:     &typedData,
+		SignatureType: verifier.SignatureTypedData,
+		Payload:       typedData,
 		Signature:     sigHex,
 		ExpectedAddr:  address,
 	})
 	if err != nil {
-		log.Println("❌ Verify failed:", err)
+		fmt.Println("❌ Verify failed:", err)
 	} else {
 		log.Println("✅ Signature is valid")
 	}
