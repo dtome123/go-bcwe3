@@ -170,6 +170,11 @@ func (e *impl) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]goethT
 func (e *impl) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- goethTypes.Log) (ethereum.Subscription, error) {
 	return e.client.SubscribeFilterLogs(ctx, q, ch)
 }
+
+func (e *impl) SubscribeNewHead(ctx context.Context, ch chan<- *goethTypes.Header) (ethereum.Subscription, error) {
+	return e.client.SubscribeNewHead(ctx, ch)
+}
+
 func (e *impl) PendingBalanceAt(ctx context.Context, account string) (*big.Int, error) {
 	accountAddress := common.HexToAddress(account)
 	return e.client.PendingBalanceAt(ctx, accountAddress)
