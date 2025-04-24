@@ -37,6 +37,8 @@ func (e *impl) Close() {
 	e.client.Close()
 }
 
+////////////////////// wrapper methods for ethclient //////////////////////
+
 func (e *impl) Client() *rpc.Client {
 	return e.client.Client()
 }
@@ -222,6 +224,8 @@ func (e *impl) SendTransaction(ctx context.Context, tx *goethTypes.Transaction) 
 	return e.client.SendTransaction(ctx, tx)
 }
 
+//////////////////////////////// EXTRA ////////////////////////////////
+
 func (e *impl) CalculateTxFee(tx *types.Tx) (*big.Int, error) {
 
 	receipt, err := e.client.TransactionReceipt(context.Background(), tx.Origin.Hash())
@@ -238,6 +242,16 @@ func (e *impl) CalculateTxFee(tx *types.Tx) (*big.Int, error) {
 
 	fee := new(big.Int).Mul(gasUsed, gasPrice)
 	return fee, nil
+}
+
+func (e *impl) SendSignedTransaction(ctx context.Context, signedTxHex string) error {
+	tx := new(goethTypes.Transaction)
+	err := tx.UnmarshalJSON([]byte(signedTxHex))
+	if err != nil {
+		return err
+	}
+
+	return e.client.SendTransaction(ctx, tx)
 }
 
 // ////////////////////////// private ////////////////////////////////

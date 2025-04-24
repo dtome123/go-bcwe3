@@ -69,7 +69,10 @@ func (n *impl) GetWalletNFTs(account string, contract string) ([]*types.NFT, err
 				}
 				return
 			}
-			tokens[i] = &types.NFT{TokenId: tokenID.String()}
+			tokens[i] = &types.NFT{
+				TokenId: tokenID,
+				Address: contract,
+			}
 		}()
 	}
 

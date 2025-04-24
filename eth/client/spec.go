@@ -56,4 +56,5 @@ type Client interface {
 
 	// extra
 	CalculateTxFee(tx *types.Tx) (*big.Int, error)
+	SendSignedTransaction(ctx context.Context, signedTxHex string) error
 }
