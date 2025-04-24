@@ -36,7 +36,7 @@ type Client interface {
 	NonceAt(ctx context.Context, account string, blockNumber *big.Int) (uint64, error)
 	NonceAtHash(ctx context.Context, account string, blockHash string) (uint64, error)
 	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]goethTypes.Log, error)
-	SubscribeNewHead(ctx context.Context, ch chan<- *goethTypes.Header) (ethereum.Subscription, error) 
+	SubscribeNewHead(ctx context.Context, ch chan<- *goethTypes.Header) (ethereum.Subscription, error)
 	SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- goethTypes.Log) (ethereum.Subscription, error)
 	PendingBalanceAt(ctx context.Context, account string) (*big.Int, error)
 	PendingStorageAt(ctx context.Context, account string, key string) ([]byte, error)
@@ -58,4 +58,5 @@ type Client interface {
 	// extra
 	CalculateTxFee(tx *types.Tx) (*big.Int, error)
 	SendSignedTransaction(ctx context.Context, signedTxHex string) error
+	IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool, error)
 }

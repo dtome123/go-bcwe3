@@ -259,6 +259,17 @@ func (e *impl) SendSignedTransaction(ctx context.Context, signedTxHex string) er
 	return e.client.SendTransaction(ctx, tx)
 }
 
+func (e *impl) IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool, error) {
+	// Get the finalized block using raw RPC call
+	var finalizedBlock *goethTypes.Header
+	err := e.client.Client().CallContext(ctx, &finalizedBlock, "eth_getBlockByNumber", "finalized", false)
+	if err != nil {
+		return false, err
+	}
+
+	return blockNumber.Cmp(finalizedBlock.Number) <= 0, nil
+}
+
 // ////////////////////////// private ////////////////////////////////
 func (e *impl) buildCompleteTransaction(tx *goethTypes.Transaction) (*types.CompleteTx, error) {
 

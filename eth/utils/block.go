@@ -30,5 +30,10 @@ func GetFromAddressTx(tx *types.Transaction) string {
 }
 
 func GetToAddressTx(tx *types.Transaction) string {
+
+	if tx.To() == nil {
+		return ""
+	}
+
 	return tx.To().Hex()
 }

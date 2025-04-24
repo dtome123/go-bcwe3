@@ -44,16 +44,24 @@ type GasFee struct {
 }
 
 type Block struct {
-	Origin       *types.Block `json:"-"`
-	Number       uint64       `json:"block_number"`
-	Hash         string       `json:"block_hash"`
-	ParentHash   string       `json:"parent_hash"`
-	Nonce        uint64       `json:"nonce"`
-	Time         uint64       `json:"timestamp"`
-	Miner        string       `json:"miner"`
-	GasLimit     uint64       `json:"gas_limit"`
-	GasUsed      uint64       `json:"gas_used"`
-	Transactions []*Tx        `json:"transactions"`
+	Origin       *types.Block  `json:"-"`
+	Number       *big.Int      `json:"block_number"`
+	Hash         string        `json:"block_hash"`
+	ParentHash   string        `json:"parent_hash"`
+	Nonce        uint64        `json:"nonce"`
+	Time         uint64        `json:"timestamp"`
+	Miner        string        `json:"miner"`
+	GasLimit     uint64        `json:"gas_limit"`
+	GasUsed      uint64        `json:"gas_used"`
+	Transactions []*Tx         `json:"transactions"`
+	Withdrawals  []*Withdrawal `json:"withdrawals"`
+}
+
+type Withdrawal struct {
+	Index     uint64 `json:"index"`
+	Validator uint64 `json:"validatorIndex"`
+	Address   string `json:"address"`
+	Amount    uint64 `json:"amount"`
 }
 
 func WrapBlock(block *types.Block) *Block {
@@ -62,8 +70,19 @@ func WrapBlock(block *types.Block) *Block {
 		txs = append(txs, WrapTx(tx))
 	}
 
+	var withdrawals []*Withdrawal
+	for _, withdrawal := range block.Withdrawals() {
+		withdrawals = append(withdrawals, &Withdrawal{
+			Index:     withdrawal.Index,
+			Validator: withdrawal.Validator,
+			Address:   withdrawal.Address.Hex(),
+			Amount:    withdrawal.Amount,
+		})
+	}
+
 	blockInfo := &Block{
-		Number:       block.NumberU64(),
+		Origin:       block,
+		Number:       block.Number(),
 		Hash:         block.Hash().Hex(),
 		ParentHash:   block.ParentHash().Hex(),
 		Nonce:        block.Nonce(),
@@ -72,6 +91,7 @@ func WrapBlock(block *types.Block) *Block {
 		GasLimit:     block.GasLimit(),
 		GasUsed:      block.GasUsed(),
 		Transactions: txs,
+		Withdrawals:  withdrawals,
 	}
 
 	return blockInfo

@@ -33,9 +33,7 @@ func (l *impl) Start(handle func(block *types.Block), errorChan chan<- error, on
 		return
 	}
 
-	// Set up a timeout and ticker
-	timeoutDuration := time.Minute // Set timeout duration, e.g., 1 minute
-	timeout := time.After(timeoutDuration)
+	// Set up a ticker
 	ticker := time.NewTicker(time.Second * 10) // Check every 10 seconds
 	defer ticker.Stop()
 
@@ -46,11 +44,13 @@ func (l *impl) Start(handle func(block *types.Block), errorChan chan<- error, on
 				errorChan <- fmt.Errorf("subscription error: %w", err)
 			}
 		case header := <-headers:
-			block, err := l.client.BlockByHash(context.Background(), header.Hash().Hex())
+
+			block, err := l.client.BlockByNumber(context.Background(), header.Number)
 			if err != nil {
 				errorChan <- fmt.Errorf("error fetching block: %w", err)
 				continue
 			}
+
 			handle(block)
 		case <-ticker.C:
 			// Execute the custom onTick callback
@@ -59,9 +59,6 @@ func (l *impl) Start(handle func(block *types.Block), errorChan chan<- error, on
 					errorChan <- fmt.Errorf("onTick error: %w", err)
 				}
 			}
-		case <-timeout:
-			errorChan <- fmt.Errorf("listener timed out after %v without new blocks", timeoutDuration)
-			return // Stop the listener
 		}
 	}
 }
