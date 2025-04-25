@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dtome123/go-bcwe3/eth/client"
+	"github.com/dtome123/go-bcwe3/eth/provider"
 	"github.com/dtome123/go-bcwe3/eth/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -17,13 +17,13 @@ import (
 )
 
 type impl struct {
-	client client.Client
+	provider provider.Provider
 }
 
-func NewNFT(ethClient client.Client) NFT {
+func NewNFT(provider provider.Provider) NFT {
 
 	return &impl{
-		client: ethClient,
+		provider: provider,
 	}
 }
 
@@ -94,7 +94,7 @@ func (n *impl) callBalanceOf(parsedABI abi.ABI, owner, contract common.Address) 
 		return nil, fmt.Errorf("%w: %v", ErrPackBalanceOf, err)
 	}
 
-	res, err := n.client.CallContract(context.Background(), ethereum.CallMsg{
+	res, err := n.provider.CallContract(context.Background(), ethereum.CallMsg{
 		To: &contract, Data: data,
 	}, nil)
 	if err != nil {
@@ -117,7 +117,7 @@ func (n *impl) callTokenOfOwnerByIndex(parsedABI abi.ABI, owner, contract common
 		return nil, fmt.Errorf("%w: %v", ErrPackTokenOfOwnerByIndex, err)
 	}
 
-	res, err := n.client.CallContract(context.Background(), ethereum.CallMsg{
+	res, err := n.provider.CallContract(context.Background(), ethereum.CallMsg{
 		To: &contract, Data: data,
 	}, nil)
 	if err != nil {

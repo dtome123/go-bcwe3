@@ -1,4 +1,4 @@
-package client
+package provider
 
 import (
 	"context"
@@ -20,7 +20,7 @@ type impl struct {
 	client *ethclient.Client
 }
 
-func NewClient(dsn string) Client {
+func NewProvider(dsn string) Provider {
 	client, err := ethclient.Dial(dsn)
 	if err != nil {
 		log.Fatal(err)

@@ -1,24 +1,24 @@
 package eth
 
 import (
-	"github.com/dtome123/go-bcwe3/eth/client"
 	"github.com/dtome123/go-bcwe3/eth/listener"
 	"github.com/dtome123/go-bcwe3/eth/nft"
+	"github.com/dtome123/go-bcwe3/eth/provider"
 )
 
 type Eth struct {
-	Client   client.Client
+	Provider provider.Provider
 	NFT      nft.NFT
 	Listener listener.Listener
 }
 
 func NewEth(dsn string) *Eth {
 
-	client := client.NewClient(dsn)
+	provider := provider.NewProvider(dsn)
 
 	return &Eth{
-		Client:   client,
-		NFT:      nft.NewNFT(client),
-		Listener: listener.NewListener(client),
+		Provider: provider,
+		NFT:      nft.NewNFT(provider),
+		Listener: listener.NewListener(provider),
 	}
 }

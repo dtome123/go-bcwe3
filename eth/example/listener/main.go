@@ -21,12 +21,7 @@ func main() {
 		fmt.Println("Processing block:", block.Number)
 	}
 
-	// Hàm callback tùy chỉnh cho onTick
-	onTick := func() error {
-		return nil //
-	}
-
-	go eth.Listener.Start(handleBlock, errChan, onTick)
+	go eth.Listener.ListenEventBlock(handleBlock, errChan)
 
 	go func() {
 		for err := range errChan {

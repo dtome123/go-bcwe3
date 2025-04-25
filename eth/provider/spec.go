@@ -1,4 +1,4 @@
-package client
+package provider
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
-type Client interface {
+type Provider interface {
 	Close()
 	Client() *rpc.Client
 	ChainID(ctx context.Context) (*big.Int, error)
