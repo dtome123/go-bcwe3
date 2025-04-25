@@ -28,4 +28,4 @@ go.work.sum
 *__debug_bin*
 
 # VScode
-.vscode*
+.vscode

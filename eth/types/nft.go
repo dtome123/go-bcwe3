@@ -1,8 +1,12 @@
 package types
 
-import "math/big"
+type NFTCollection struct {
+	ContractAddress string `json:"contract_address"`
+	Tokens          []*NFT `json:"tokens"`
+}
 
 type NFT struct {
-	Address string   `json:"address"`
-	TokenId *big.Int `json:"token_id"`
+	ContractAddress string `json:"address"`
+	TokenId         string `json:"token_id"`
+	Uri             string `json:"uri"`
 }
