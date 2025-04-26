@@ -59,4 +59,5 @@ type Provider interface {
 	CalculateTxFee(tx *types.Tx) (*big.Int, error)
 	SendSignedTransaction(ctx context.Context, signedTxHex string) (string, error)
 	IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool, error)
+	BuildCompleteTransaction(block *types.Block, tx *types.Tx) (*types.CompleteTx, error)
 }
