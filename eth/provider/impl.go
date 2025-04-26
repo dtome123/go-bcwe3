@@ -107,7 +107,7 @@ func (e *impl) TransactionByHash(ctx context.Context, hash string) (tx *types.Co
 		return
 	}
 
-	tx, err = e.buildCompleteTransactionWithBlockHash(transaction.Hash(), transaction)
+	tx, err = e.buildCompleteTransactionWithHash(transaction)
 
 	return
 }
@@ -127,7 +127,7 @@ func (e *impl) TransactionInBlock(ctx context.Context, blockHash string, index u
 		return nil, err
 	}
 
-	return e.buildCompleteTransactionWithBlockHash(common.HexToHash(blockHash), tx)
+	return e.buildCompleteTransactionWithHash(tx)
 }
 
 func (e *impl) TransactionReceipt(ctx context.Context, hash string) (*types.Receipt, error) {
@@ -333,24 +333,25 @@ func (e *impl) IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool
 }
 
 func (e *impl) BuildCompleteTransaction(block *types.Block, tx *types.Tx) (*types.CompleteTx, error) {
-	return e.buildCompleteTransaction(block.Origin, tx.Origin)
+	return e.buildCompleteTransactionWithBlock(block.Origin, tx.Origin)
 }
 
 // ////////////////////////// private ////////////////////////////////
 
-func (e *impl) buildCompleteTransactionWithBlockHash(blockHash common.Hash, tx *goethTypes.Transaction) (*types.CompleteTx, error) {
-	ctx := context.Background()
-
-	block, _ := e.client.BlockByHash(ctx, blockHash)
-
-	return e.buildCompleteTransaction(block, tx)
+func (e *impl) buildCompleteTransactionWithHash(tx *goethTypes.Transaction) (*types.CompleteTx, error) {
+	return e.buildCompleteTransactionWithBlock(nil, tx)
 }
 
-func (e *impl) buildCompleteTransaction(block *goethTypes.Block, tx *goethTypes.Transaction) (*types.CompleteTx, error) {
+func (e *impl) buildCompleteTransactionWithBlock(block *goethTypes.Block, tx *goethTypes.Transaction) (*types.CompleteTx, error) {
 
 	ctx := context.Background()
 
 	receipt, _ := e.client.TransactionReceipt(ctx, tx.Hash())
+
+	if block == nil {
+		block, _ = e.client.BlockByHash(ctx, receipt.BlockHash)
+	}
+
 	wrapTx := types.WrapTx(tx)
 
 	var timestamp uint64
