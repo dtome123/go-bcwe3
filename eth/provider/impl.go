@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	goethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -77,16 +78,26 @@ func (e *impl) PeerCount(ctx context.Context) (uint64, error) {
 	return e.client.PeerCount(ctx)
 }
 
-func (e *impl) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*goethTypes.Receipt, error) {
-	return e.client.BlockReceipts(ctx, blockNrOrHash)
+func (e *impl) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*types.Receipt, error) {
+
+	receipts, err := e.client.BlockReceipts(ctx, blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return types.WrapReceipts(receipts), nil
 }
 
-func (e *impl) HeaderByHash(ctx context.Context, hash string) (*goethTypes.Header, error) {
-	return e.client.HeaderByHash(ctx, common.HexToHash(hash))
+func (e *impl) HeaderByHash(ctx context.Context, hash string) (*types.Header, error) {
+	header, err := e.client.HeaderByHash(ctx, common.HexToHash(hash))
+
+	return types.WrapHeader(header), err
 }
 
-func (e *impl) HeaderByNumber(ctx context.Context, number *big.Int) (*goethTypes.Header, error) {
-	return e.client.HeaderByNumber(ctx, number)
+func (e *impl) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+	header, err := e.client.HeaderByNumber(ctx, number)
+
+	return types.WrapHeader(header), err
 }
 
 func (e *impl) TransactionByHash(ctx context.Context, hash string) (tx *types.CompleteTx, isPending bool, err error) {
@@ -119,8 +130,10 @@ func (e *impl) TransactionInBlock(ctx context.Context, blockHash string, index u
 	return e.buildCompleteTransaction(tx)
 }
 
-func (e *impl) TransactionReceipt(ctx context.Context, hash string) (*goethTypes.Receipt, error) {
-	return e.client.TransactionReceipt(ctx, common.HexToHash(hash))
+func (e *impl) TransactionReceipt(ctx context.Context, hash string) (*types.Receipt, error) {
+	receipt, err := e.client.TransactionReceipt(ctx, common.HexToHash(hash))
+
+	return types.WrapReceipt(receipt), err
 }
 
 func (e *impl) BalanceAt(ctx context.Context, account string, blockNumber *big.Int) (*big.Int, error) {
@@ -164,15 +177,57 @@ func (e *impl) NonceAtHash(ctx context.Context, account string, blockHash string
 	accountAddress := common.HexToAddress(account)
 	return e.client.NonceAtHash(ctx, accountAddress, common.HexToHash(blockHash))
 }
-func (e *impl) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]goethTypes.Log, error) {
-	return e.client.FilterLogs(ctx, q)
+func (e *impl) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+	logs, err := e.client.FilterLogs(ctx, q)
+
+	wLogs := make([]types.Log, len(logs))
+	for i, l := range logs {
+		p := types.WrapLog(&l)
+		wLogs[i] = p.Dereference()
+	}
+
+	return wLogs, err
 }
-func (e *impl) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- goethTypes.Log) (ethereum.Subscription, error) {
-	return e.client.SubscribeFilterLogs(ctx, q, ch)
+func (e *impl) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+
+	oCh := make(chan goethTypes.Log)
+
+	sub, err := e.client.SubscribeFilterLogs(ctx, q, oCh)
+	if err != nil {
+		close(oCh)
+		return nil, err
+	}
+
+	go func() {
+		defer close(oCh)
+		for l := range oCh {
+			wLog := types.WrapLog(&l)
+			ch <- wLog.Dereference()
+		}
+	}()
+
+	return sub, nil
 }
 
-func (e *impl) SubscribeNewHead(ctx context.Context, ch chan<- *goethTypes.Header) (ethereum.Subscription, error) {
-	return e.client.SubscribeNewHead(ctx, ch)
+func (e *impl) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
+	oCh := make(chan *goethTypes.Header)
+
+	sub, err := e.client.SubscribeNewHead(ctx, oCh)
+	if err != nil {
+		close(oCh)
+		return nil, err
+	}
+
+	go func() {
+		defer close(oCh)
+		for h := range oCh {
+			wHeader := types.WrapHeader(h)
+			ch <- wHeader
+		}
+	}()
+
+	return sub, nil
+
 }
 
 func (e *impl) PendingBalanceAt(ctx context.Context, account string) (*big.Int, error) {
@@ -249,19 +304,26 @@ func (e *impl) CalculateTxFee(tx *types.Tx) (*big.Int, error) {
 	return fee, nil
 }
 
-func (e *impl) SendSignedTransaction(ctx context.Context, signedTxHex string) error {
-	tx := new(goethTypes.Transaction)
-	err := tx.UnmarshalJSON([]byte(signedTxHex))
-	if err != nil {
-		return err
+func (e *impl) SendSignedTransaction(ctx context.Context, signedTxHex string) (string, error) {
+	data := common.FromHex(signedTxHex)
+
+	var tx goethTypes.Transaction
+	if err := rlp.DecodeBytes(data, &tx); err != nil {
+		log.Fatal(err)
 	}
 
-	return e.client.SendTransaction(ctx, tx)
+	err := e.client.SendTransaction(ctx, &tx)
+
+	if err != nil {
+		return "", err
+	}
+
+	return tx.Hash().Hex(), nil
 }
 
 func (e *impl) IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool, error) {
 	// Get the finalized block using raw RPC call
-	var finalizedBlock *goethTypes.Header
+	var finalizedBlock *types.Header
 	err := e.client.Client().CallContext(ctx, &finalizedBlock, "eth_getBlockByNumber", "finalized", false)
 	if err != nil {
 		return false, err

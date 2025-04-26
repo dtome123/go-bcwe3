@@ -1,18 +1,24 @@
 package nft
 
-import goethTypes "github.com/ethereum/go-ethereum/core/types"
+import (
+	"github.com/dtome123/go-bcwe3/eth/types"
+)
 
-type LogHeap []goethTypes.Log
+type LogHeap []types.Log
 
 func (h LogHeap) Len() int           { return len(h) }
 func (h LogHeap) Less(i, j int) bool { return h[i].BlockNumber < h[j].BlockNumber }
 func (h LogHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
-func (h *LogHeap) Push(x interface{}) {
-	*h = append(*h, x.(goethTypes.Log))
+func (h *LogHeap) Push(x any) {
+	xLog, ok := x.(types.Log)
+
+	if ok {
+		*h = append(*h, xLog)
+	}
 }
 
-func (h *LogHeap) Pop() interface{} {
+func (h *LogHeap) Pop() any {
 	old := *h
 	n := len(old)
 	x := old[n-1]

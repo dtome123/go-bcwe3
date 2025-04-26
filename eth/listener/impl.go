@@ -11,7 +11,6 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	goethTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type impl struct {
@@ -27,7 +26,7 @@ func NewListener(
 }
 
 func (l *impl) ListenBlock(handleFunc func(block *types.Block), errorChan chan<- error) {
-	headers := make(chan *goethTypes.Header)
+	headers := make(chan *types.Header)
 	sub, err := l.client.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
 		errorChan <- fmt.Errorf("error subscribing to new blocks: %w", err)
@@ -58,7 +57,7 @@ func (l *impl) ListenContractEvent(
 	contractAddress string,
 	eventName string,
 	eventPrototype any,
-	unpackFunc func(vLog goethTypes.Log, event interface{}) error,
+	unpackFunc func(vLog types.Log, event interface{}) error,
 	handleFunc func(event interface{}),
 ) error {
 
@@ -68,7 +67,7 @@ func (l *impl) ListenContractEvent(
 		Addresses: []common.Address{address},
 	}
 
-	logs := make(chan goethTypes.Log)
+	logs := make(chan types.Log)
 	sub, err := l.client.SubscribeFilterLogs(context.Background(), query, logs)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to logs: %w", err)

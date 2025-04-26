@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	goethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -139,10 +138,10 @@ func (i *impl) supportInterface(contractAddr string, interfaceIdBytes [4]byte) (
 }
 
 // fetchTransferLogs fetches logs for both "from" and "to" addresses concurrently
-func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Address) ([]goethTypes.Log, error) {
+func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Address) ([]types.Log, error) {
 
 	type result struct {
-		logs []goethTypes.Log
+		logs []types.Log
 		err  error
 	}
 
@@ -177,7 +176,7 @@ func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Addre
 	}()
 
 	// Collect logs
-	var logs []goethTypes.Log
+	var logs []types.Log
 	for i := 0; i < 2; i++ {
 		res := <-logsChan
 		if res.err != nil {
@@ -191,7 +190,7 @@ func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Addre
 }
 
 // processLogs processes logs and tracks NFT holdings for each contract
-func (i *impl) processLogs(logs []goethTypes.Log, targetAddress common.Address) map[string]map[string]bool {
+func (i *impl) processLogs(logs []types.Log, targetAddress common.Address) map[string]map[string]bool {
 	nftHoldings := make(map[string]map[string]bool)
 
 	logsHeap := &LogHeap{}
@@ -204,7 +203,7 @@ func (i *impl) processLogs(logs []goethTypes.Log, targetAddress common.Address) 
 
 	// Process sorted logs
 	for logsHeap.Len() > 0 {
-		vLog := heap.Pop(logsHeap).(goethTypes.Log)
+		vLog := heap.Pop(logsHeap).(types.Log)
 
 		if len(vLog.Topics) < 4 {
 			continue
@@ -213,7 +212,7 @@ func (i *impl) processLogs(logs []goethTypes.Log, targetAddress common.Address) 
 		from := common.HexToAddress(vLog.Topics[1].Hex())
 		to := common.HexToAddress(vLog.Topics[2].Hex())
 		tokenID := new(big.Int).SetBytes(vLog.Topics[3].Bytes()).String()
-		contract := vLog.Address.Hex()
+		contract := vLog.Address
 
 		// Initialize contract entry in nftHoldings map if not exists
 		if _, ok := nftHoldings[contract]; !ok {
