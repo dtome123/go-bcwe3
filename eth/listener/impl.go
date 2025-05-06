@@ -48,7 +48,6 @@ func (l *impl) ListenBlock(handleFunc func(block *types.Block), errorChan chan<-
 			}
 
 			handleFunc(block)
-
 		}
 	}
 }

@@ -40,8 +40,12 @@ func (e *impl) Close() {
 
 ////////////////////// wrapper methods for ethclient //////////////////////
 
-func (e *impl) Client() *rpc.Client {
+func (e *impl) RPCClient() *rpc.Client {
 	return e.client.Client()
+}
+
+func (e *impl) Client() *ethclient.Client {
+	return e.client
 }
 
 func (e *impl) ChainID(ctx context.Context) (*big.Int, error) {

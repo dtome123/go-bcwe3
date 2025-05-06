@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/dtome123/go-bcwe3/eth"
@@ -11,7 +12,7 @@ func main() {
 
 	eth := eth.NewEth("https://sepolia.infura.io/v3/da05d3dc31244bd483a28d746233d32f")
 
-	collections, err := eth.NFT.GetWalletNFTs(account)
+	collections, err := eth.ERC721.GetWalletNFTs(context.Background(), account)
 
 	if err != nil {
 		panic(err)

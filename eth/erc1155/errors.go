@@ -1,4 +1,4 @@
-package nft
+package erc1155
 
 import "errors"
 

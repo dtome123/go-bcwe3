@@ -8,12 +8,14 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	goethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Provider interface {
 	Close()
-	Client() *rpc.Client
+	RPCClient() *rpc.Client
+	Client() *ethclient.Client
 	ChainID(ctx context.Context) (*big.Int, error)
 	BlockByHash(ctx context.Context, hash string) (*types.Block, error)
 	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)

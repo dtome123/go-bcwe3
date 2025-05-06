@@ -1,35 +1,44 @@
-package nft
+package erc721
 
 import (
 	"context"
-	"log"
 	"math/big"
-	"strings"
+	"sort"
 	"sync"
-
-	"github.com/dtome123/go-bcwe3/eth/provider"
-	"github.com/dtome123/go-bcwe3/eth/types"
 
 	"container/heap"
 
+	"github.com/dtome123/go-bcwe3/eth/constants"
+	"github.com/dtome123/go-bcwe3/eth/contract"
+	"github.com/dtome123/go-bcwe3/eth/erc165"
+	"github.com/dtome123/go-bcwe3/eth/provider"
+	"github.com/dtome123/go-bcwe3/eth/types"
+
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type impl struct {
 	provider provider.Provider
+	contract.Contract
+	erc165.ERC165
 }
 
-func NewNFT(provider provider.Provider) NFT {
+func New(
+	provider provider.Provider,
+	contract contract.Contract,
+) ERC721 {
 
+	erc165 := erc165.New(provider, contract)
 	return &impl{
 		provider: provider,
+		Contract: contract,
+		ERC165:   erc165,
 	}
 }
 
-func (i *impl) GetWalletNFTs(account string) ([]*types.NFTCollection, error) {
+func (i *impl) GetWalletNFTs(ctx context.Context, account string) ([]*types.NFTCollection, error) {
 	eventID := crypto.Keccak256Hash([]byte("Transfer(address,address,uint256)"))
 	targetAddress := common.HexToAddress(account)
 
@@ -61,81 +70,126 @@ func (i *impl) GetWalletNFTs(account string) ([]*types.NFTCollection, error) {
 	return nfts, nil
 }
 
-func (i *impl) IsERC721(contractAddr string) (bool, error) {
+func (i *impl) GetOwnerTokens(ctx context.Context, tokenAddress string) ([]*types.NFTBalance, error) {
+
+	addressHash := common.HexToAddress(tokenAddress)
+
+	eventSignature := []byte("Transfer(address,address,uint256)")
+	eventID := crypto.Keccak256Hash(eventSignature)
+
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{addressHash},
+		Topics:    [][]common.Hash{{eventID}},
+	}
+
+	logs, err := i.provider.FilterLogs(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(logs, func(i, j int) bool {
+		return logs[i].BlockNumber < logs[j].BlockNumber
+	})
+	owners := make(map[string]string)
+
+	for _, log := range logs {
+
+		if len(log.Topics) != 4 {
+			continue
+		}
+
+		to := common.HexToAddress(log.Topics[2].Hex())
+		tokenId := new(big.Int).SetBytes(log.Topics[3].Bytes()).String()
+
+		if to == (common.Address{}) {
+			delete(owners, tokenId)
+		} else {
+			owners[tokenId] = to.Hex()
+		}
+	}
+
+	out := make([]*types.NFTBalance, 0, len(owners))
+	for tokenId, owner := range owners {
+		out = append(out, &types.NFTBalance{
+			Token: types.NFT{
+				ContractAddress: tokenAddress,
+				TokenId:         tokenId,
+				Standard:        types.ERC721,
+			},
+			Owner:   owner,
+			Balance: big.NewInt(1),
+		})
+	}
+
+	return out, nil
+}
+
+func (i *impl) IsERC721(ctx context.Context, contractAddr string) (bool, error) {
 	// ERC-721 interfaceId is "0x80ac58cd"
 	interfaceIdBytes := [4]byte{0x80, 0xac, 0x58, 0xcd}
 
-	return i.supportInterface(contractAddr, interfaceIdBytes)
+	return i.SupportInterface(ctx, contractAddr, interfaceIdBytes)
 }
 
-func (i *impl) IsERC1155(contractAddr string) (bool, error) {
-	// ERC-1155 interfaceId is "0xd9b67a26"
-	interfaceIdBytes := [4]byte{0xd9, 0xb6, 0x7a, 0x26}
+func (i *impl) GetBalanceOf(ctx context.Context, account string, tokenAddress string) (*big.Int, error) {
+	caller, err := i.NewCaller(tokenAddress, constants.ERC721ABI)
 
-	return i.supportInterface(contractAddr, interfaceIdBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return contract.CallViewFunction[*big.Int](caller, "balanceOf", common.HexToAddress(account))
 }
 
-func (i *impl) IsNFTToken(contractAddr string) (bool, error) {
+func (i *impl) GetOwnerOf(ctx context.Context, tokenAddress string, tokenId *big.Int) (string, error) {
+	caller, err := i.NewCaller(tokenAddress, constants.ERC721ABI)
 
-	var isNFT bool
-	var err error
-
-	isNFT, err = i.IsERC721(contractAddr)
 	if err != nil {
-		return false, err
-	}
-	if isNFT {
-		return true, nil
+		return "", err
 	}
 
-	isNFT, err = i.IsERC1155(contractAddr)
+	address, err := contract.CallViewFunction[common.Address](caller, "ownerOf", tokenId)
+
 	if err != nil {
-		return false, err
-	}
-	if isNFT {
-		return true, nil
+		return "", err
 	}
 
-	return false, nil
+	return address.Hex(), nil
+}
+
+func (i *impl) GetName(ctx context.Context, tokenAddress string) (string, error) {
+	caller, err := i.NewCaller(tokenAddress, constants.ERC721ABI)
+
+	if err != nil {
+		return "", err
+	}
+
+	name, err := contract.CallViewFunction[string](caller, "name")
+
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
+}
+
+func (i *impl) GetSymbol(ctx context.Context, tokenAddress string) (string, error) {
+	caller, err := i.NewCaller(tokenAddress, constants.ERC721ABI)
+
+	if err != nil {
+		return "", err
+	}
+
+	symbol, err := contract.CallViewFunction[string](caller, "symbol")
+
+	if err != nil {
+		return "", err
+	}
+
+	return symbol, nil
 }
 
 ///////////////////////////// private method ////////////////////////////
-
-func (i *impl) supportInterface(contractAddr string, interfaceIdBytes [4]byte) (bool, error) {
-	// Convert the contract address from string to Address
-	contractAddress := common.HexToAddress(contractAddr)
-
-	// Parse the ERC-165 ABI
-	contractABI, err := abi.JSON(strings.NewReader(erc165ABI))
-	if err != nil {
-		log.Fatalf("Failed to parse ABI: %v", err)
-	}
-
-	// Pack the "supportsInterface" method with the interfaceIdBytes as argument
-	callData, err := contractABI.Pack("supportsInterface", interfaceIdBytes)
-	if err != nil {
-		log.Fatalf("Failed to pack data: %v", err)
-	}
-
-	// Send the request to the contract and get the result
-	result, err := i.provider.CallContract(context.Background(), ethereum.CallMsg{
-		To:   &contractAddress,
-		Data: callData,
-	}, nil)
-	if err != nil {
-		log.Fatalf("Failed to call contract: %v", err)
-	}
-
-	// Decode the result (true/false)
-	var supports bool
-	err = contractABI.UnpackIntoInterface(&supports, "supportsInterface", result)
-	if err != nil {
-		log.Fatalf("Failed to unpack result: %v", err)
-	}
-
-	// Return whether the contract supports ERC-721
-	return supports, nil
-}
 
 // fetchTransferLogs fetches logs for both "from" and "to" addresses concurrently
 func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Address) ([]types.Log, error) {
@@ -154,7 +208,7 @@ func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Addre
 			FromBlock: startBlock,
 			Topics: [][]common.Hash{
 				{eventID},
-				{common.BytesToHash(targetAddress.Bytes())},
+				{common.HexToHash(targetAddress.Hex())},
 			},
 		}
 		logs, err := i.provider.FilterLogs(context.Background(), query)
@@ -168,7 +222,7 @@ func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Addre
 			Topics: [][]common.Hash{
 				{eventID},
 				nil,
-				{common.BytesToHash(targetAddress.Bytes())},
+				{common.HexToHash(targetAddress.Hex())},
 			},
 		}
 		logs, err := i.provider.FilterLogs(context.Background(), query)
@@ -193,7 +247,7 @@ func (i *impl) fetchTransferLogs(eventID common.Hash, targetAddress common.Addre
 func (i *impl) processLogs(logs []types.Log, targetAddress common.Address) map[string]map[string]bool {
 	nftHoldings := make(map[string]map[string]bool)
 
-	logsHeap := &LogHeap{}
+	logsHeap := &types.LogHeap{}
 	heap.Init(logsHeap)
 
 	// Add logs to heap for sorting
@@ -226,13 +280,20 @@ func (i *impl) processLogs(logs []types.Log, targetAddress common.Address) map[s
 		if from == targetAddress {
 			delete(nftHoldings[contract], tokenID)
 		}
+
+		if len(nftHoldings[contract]) == 0 {
+			delete(nftHoldings, contract)
+		}
 	}
 
 	return nftHoldings
 }
 
 // checkIsNFTContracts checks if each contract is an ERC-721 token using parallel workers
-func (i *impl) checkIsNFTContracts(nftHoldings map[string]map[string]bool) (map[string]bool, error) {
+func (i *impl) checkIsNFTContracts(nftHoldings map[string]map[string]bool) (
+	map[string]bool,
+	error,
+) {
 	workerPool := make(chan struct{}, 10) // Max 10 workers
 	isNFTContracts := make(map[string]bool)
 
@@ -248,9 +309,8 @@ func (i *impl) checkIsNFTContracts(nftHoldings map[string]map[string]bool) (map[
 				<-workerPool
 			}()
 
-			isNFT, err := i.IsNFTToken(contract)
+			isNFT, err := i.IsERC721(context.Background(), contract)
 			if err != nil {
-				// Handle error or log it
 				return
 			}
 			isNFTContracts[contract] = isNFT
@@ -264,7 +324,10 @@ func (i *impl) checkIsNFTContracts(nftHoldings map[string]map[string]bool) (map[
 }
 
 // prepareNFTs prepares the final list of NFTs based on holdings and ERC-721 verification
-func (i *impl) prepareNFTs(nftHoldings map[string]map[string]bool, isNFTContracts map[string]bool) []*types.NFTCollection {
+func (i *impl) prepareNFTs(
+	nftHoldings map[string]map[string]bool,
+	isNFTContracts map[string]bool,
+) []*types.NFTCollection {
 
 	collections := make([]*types.NFTCollection, 0)
 	for contract, tokens := range nftHoldings {
@@ -277,6 +340,7 @@ func (i *impl) prepareNFTs(nftHoldings map[string]map[string]bool, isNFTContract
 			nfts = append(nfts, &types.NFT{
 				ContractAddress: contract,
 				TokenId:         tokenID,
+				Standard:        types.ERC721,
 			})
 		}
 
