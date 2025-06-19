@@ -104,19 +104,17 @@ func (e *impl) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Head
 	return types.WrapHeader(header), err
 }
 
-func (e *impl) TransactionByHash(ctx context.Context, hash string) (tx *types.CompleteTx, isPending bool, err error) {
+func (e *impl) TransactionByHash(ctx context.Context, hash string) (tx *types.Tx, isPending bool, err error) {
 
 	transaction, isPending, err := e.client.TransactionByHash(ctx, common.HexToHash(hash))
 	if err != nil {
 		return
 	}
 
-	tx, err = e.buildCompleteTransactionWithHash(transaction)
-
-	return
+	return types.WrapTx(transaction), isPending, nil
 }
 
-func (e *impl) TransactionSender(ctx context.Context, tx *types.CompleteTx, blockHash string, index uint) (common.Address, error) {
+func (e *impl) TransactionSender(ctx context.Context, tx *types.Tx, blockHash string, index uint) (common.Address, error) {
 	return e.client.TransactionSender(ctx, tx.Origin, common.HexToHash(blockHash), index)
 }
 
@@ -124,14 +122,14 @@ func (e *impl) TransactionCount(ctx context.Context, blockHash string) (uint, er
 	return e.client.TransactionCount(ctx, common.HexToHash(blockHash))
 }
 
-func (e *impl) TransactionInBlock(ctx context.Context, blockHash string, index uint) (*types.CompleteTx, error) {
+func (e *impl) TransactionInBlock(ctx context.Context, blockHash string, index uint) (*types.Tx, error) {
 
 	tx, err := e.client.TransactionInBlock(ctx, common.HexToHash(blockHash), index)
 	if err != nil {
 		return nil, err
 	}
 
-	return e.buildCompleteTransactionWithHash(tx)
+	return types.WrapTx(tx), nil
 }
 
 func (e *impl) TransactionReceipt(ctx context.Context, hash string) (*types.Receipt, error) {
@@ -336,27 +334,19 @@ func (e *impl) IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool
 	return blockNumber.Cmp(finalizedBlock.Number) <= 0, nil
 }
 
-func (e *impl) BuildCompleteTransaction(block *types.Block, tx *types.Tx) (*types.CompleteTx, error) {
-	return e.buildCompleteTransactionWithBlock(block.Origin, tx.Origin)
-}
-
-// ////////////////////////// private ////////////////////////////////
-
-func (e *impl) buildCompleteTransactionWithHash(tx *goethTypes.Transaction) (*types.CompleteTx, error) {
-	return e.buildCompleteTransactionWithBlock(nil, tx)
-}
-
-func (e *impl) buildCompleteTransactionWithBlock(block *goethTypes.Block, tx *goethTypes.Transaction) (*types.CompleteTx, error) {
+func (e *impl) GetCompleteTransaction(tx *types.Tx) (*types.CompleteTx, error) {
 
 	ctx := context.Background()
 
-	receipt, _ := e.client.TransactionReceipt(ctx, tx.Hash())
-
-	if block == nil {
-		block, _ = e.client.BlockByHash(ctx, receipt.BlockHash)
+	receipt, err := e.client.TransactionReceipt(ctx, tx.Origin.Hash())
+	if err != nil {
+		return nil, err
 	}
 
-	wrapTx := types.WrapTx(tx)
+	block, err := e.client.BlockByHash(ctx, receipt.BlockHash)
+	if err != nil {
+		return nil, err
+	}
 
 	var timestamp uint64
 	if block != nil {
@@ -368,21 +358,21 @@ func (e *impl) buildCompleteTransactionWithBlock(block *goethTypes.Block, tx *go
 		}
 	}
 
-	from := utils.GetFromAddressTx(tx)
-	to := utils.GetToAddressTx(tx)
-	fee, _ := e.CalculateTxFee(wrapTx)
+	from := utils.GetFromAddressTx(tx.Origin)
+	to := utils.GetToAddressTx(tx.Origin)
+	fee, _ := e.CalculateTxFee(tx)
 
 	complete := &types.CompleteTx{
-		Origin:    tx,
-		Hash:      tx.Hash().Hex(),
+		Origin:    tx.Origin,
+		Hash:      tx.Hash,
 		From:      from,
 		To:        to,
-		Value:     tx.Value(),
-		Gas:       tx.Gas(),
-		GasPrice:  tx.GasPrice(),
+		Value:     tx.Value,
+		Gas:       tx.Gas,
+		GasPrice:  tx.GasPrice,
 		GasUsed:   receipt.GasUsed,
 		Fee:       fee,
-		Nonce:     tx.Nonce(),
+		Nonce:     tx.Origin.Nonce(),
 		Status:    receipt.Status,
 		BlockHash: receipt.BlockHash.Hex(),
 		BlockNum:  receipt.BlockNumber.Uint64(),
@@ -390,14 +380,14 @@ func (e *impl) buildCompleteTransactionWithBlock(block *goethTypes.Block, tx *go
 		Pending:   receipt.Status == 0 && receipt.BlockNumber == nil,
 		GasFee: &types.GasFee{
 			BaseFee: block.BaseFee(),
-			TipCap:  tx.GasTipCap(),
-			FeeCap:  tx.GasFeeCap(),
+			TipCap:  tx.Origin.GasTipCap(),
+			FeeCap:  tx.Origin.GasFeeCap(),
 		},
-		Type: tx.Type(),
+		Type: tx.Origin.Type(),
 	}
 
-	if tx.To() != nil {
-		complete.To = tx.To().Hex()
+	if tx.Origin.To() != nil {
+		complete.To = tx.Origin.To().Hex()
 	}
 
 	return complete, nil
