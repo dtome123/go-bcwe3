@@ -288,9 +288,9 @@ func (e *impl) SendTransaction(ctx context.Context, tx *goethTypes.Transaction) 
 
 //////////////////////////////// EXTRA ////////////////////////////////
 
-func (e *impl) CalculateTxFee(tx *types.Tx) (*big.Int, error) {
+func (e *impl) CalculateTxFee(ctx context.Context, tx *types.Tx) (*big.Int, error) {
 
-	receipt, err := e.client.TransactionReceipt(context.Background(), tx.Origin.Hash())
+	receipt, err := e.client.TransactionReceipt(ctx, tx.Origin.Hash())
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,10 @@ func (e *impl) GetCompleteTransaction(ctx context.Context, tx *types.Tx) (*types
 
 	from := utils.GetFromAddressTx(tx.Origin)
 	to := utils.GetToAddressTx(tx.Origin)
-	fee, _ := e.CalculateTxFee(tx)
+	fee, err := e.CalculateTxFee(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
 
 	complete := &types.CompleteTx{
 		Origin:    tx.Origin,

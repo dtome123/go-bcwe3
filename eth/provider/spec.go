@@ -58,8 +58,8 @@ type Provider interface {
 	SendTransaction(ctx context.Context, tx *goethTypes.Transaction) error
 
 	// extra
-	CalculateTxFee(tx *types.Tx) (*big.Int, error)
+	CalculateTxFee(ctx context.Context, tx *types.Tx) (*big.Int, error)
 	SendSignedTransaction(ctx context.Context, signedTxHex string) (string, error)
 	IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool, error)
-	GetCompleteTransaction(tx *types.Tx) (*types.CompleteTx, error)
+	GetCompleteTransaction(ctx context.Context, tx *types.Tx) (*types.CompleteTx, error)
 }
