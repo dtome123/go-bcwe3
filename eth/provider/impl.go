@@ -334,9 +334,7 @@ func (e *impl) IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool
 	return blockNumber.Cmp(finalizedBlock.Number) <= 0, nil
 }
 
-func (e *impl) GetCompleteTransaction(tx *types.Tx) (*types.CompleteTx, error) {
-
-	ctx := context.Background()
+func (e *impl) GetCompleteTransaction(ctx context.Context, tx *types.Tx) (*types.CompleteTx, error) {
 
 	receipt, err := e.client.TransactionReceipt(ctx, tx.Origin.Hash())
 	if err != nil {
@@ -352,7 +350,7 @@ func (e *impl) GetCompleteTransaction(tx *types.Tx) (*types.CompleteTx, error) {
 	if block != nil {
 		timestamp = block.Time()
 	} else {
-		blockObj, err := e.client.BlockByHash(context.Background(), receipt.BlockHash)
+		blockObj, err := e.client.BlockByHash(ctx, receipt.BlockHash)
 		if err == nil {
 			timestamp = blockObj.Time()
 		}
