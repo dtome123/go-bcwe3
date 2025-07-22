@@ -1,6 +1,7 @@
 package constants
 
-const ERC20ABI = `[
+const ERC20ABI = `
+[
 	{
 		"inputs": [
 			{

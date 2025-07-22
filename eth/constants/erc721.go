@@ -1,6 +1,7 @@
 package constants
 
-const ERC721ABI = `[
+const ERC721ABI = `
+[
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
