@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 
@@ -34,11 +33,9 @@ func main() {
 	wei := new(big.Int)
 	wei.SetString("10000000000000000000", 10)
 	fmt.Println(erc20.BalanceOf("0x7556989c2A60E60F0c66A2b9D77079BC9F189037"))
-	tx, err := erc20.Transfer(context.Background(), "0xa84e540D1eb5458DFC2bC25760bD64fbECb8e345", wei, "private")
 
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(tx)
 }

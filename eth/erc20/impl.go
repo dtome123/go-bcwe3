@@ -15,7 +15,7 @@ import (
 type impl struct {
 	provider provider.Provider
 	address  string
-	contract contract.Contract
+	contract.Contract
 }
 
 func (i *impl) Address() string {
@@ -23,7 +23,7 @@ func (i *impl) Address() string {
 }
 
 func (i *impl) Name() (string, error) {
-	result, err := i.contract.CallViewFunction("name")
+	result, err := i.Contract.Call(context.Background(), "name")
 
 	if err != nil {
 		return "", err
@@ -33,7 +33,7 @@ func (i *impl) Name() (string, error) {
 }
 
 func (i *impl) Symbol() (string, error) {
-	result, err := i.contract.CallViewFunction("symbol")
+	result, err := i.Contract.Call(context.Background(), "symbol")
 
 	if err != nil {
 		return "", err
@@ -43,7 +43,7 @@ func (i *impl) Symbol() (string, error) {
 }
 
 func (i *impl) Decimals() (uint8, error) {
-	result, err := i.contract.CallViewFunction("decimals")
+	result, err := i.Contract.Call(context.Background(), "decimals")
 
 	if err != nil {
 		return 0, err
@@ -53,7 +53,7 @@ func (i *impl) Decimals() (uint8, error) {
 }
 
 func (i *impl) TotalSupply() (*big.Int, error) {
-	result, err := i.contract.CallViewFunction("totalSupply")
+	result, err := i.Contract.Call(context.Background(), "totalSupply")
 
 	if err != nil {
 		return nil, err
@@ -63,23 +63,13 @@ func (i *impl) TotalSupply() (*big.Int, error) {
 }
 
 func (i *impl) BalanceOf(account string) (*big.Int, error) {
-	result, err := i.contract.CallViewFunction("balanceOf", common.HexToAddress(account))
+	result, err := i.Contract.Call(context.Background(), "balanceOf", common.HexToAddress(account))
 
 	if err != nil {
 		return nil, err
 	}
 
 	return result.Index(0).AsBigInt()
-}
-
-func (i *impl) Transfer(ctx context.Context, toAddress string, amount *big.Int, privateKey string) (*types.Tx, error) {
-
-	tx, err := i.contract.Transact(ctx, "transfer", privateKey, common.HexToAddress(toAddress), amount)
-	if err != nil {
-		return nil, err
-	}
-
-	return tx, nil
 }
 
 func (i *impl) GetInfo(ctx context.Context) (*types.ERC20Token, error) {
@@ -145,6 +135,6 @@ func New(address string, provider provider.Provider) (ERC20, error) {
 
 	return &impl{
 		provider: provider,
-		contract: contract,
+		Contract: contract,
 	}, nil
 }

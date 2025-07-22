@@ -46,9 +46,6 @@ func NewContract(provider provider.Provider, address, abiData string) (Contract,
 	}, nil
 }
 
-// NewCmd initializes a smart implContract interface from address and ABI data.
-
-// Call invokes a view/pure function on the contract.
 func (c *implContract) Call(ctx context.Context, method string, params ...any) (ContractResults, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -103,31 +100,8 @@ func (c *implContract) Transact(ctx context.Context, method string, privateKey s
 	return types.WrapTx(tx), nil
 }
 
-func (c *implContract) CallViewFunction(method string, params ...interface{}) (ContractResults, error) {
-
-	var result []interface{}
-
-	if method == "" {
-		return nil, fmt.Errorf("method name cannot be empty")
-	}
-
-	err := c.boundContract.Call(nil, &result, method, params...)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) == 0 {
-		return nil, fmt.Errorf("no result returned for method %s", method)
-	}
-
-	var viewResults ContractResults
-	for _, value := range result {
-		viewResults = append(viewResults, ContractResult{Value: value})
-	}
-
-	return viewResults, nil
-}
-
-func (l *implContract) ListenContractEvent(
+func (l *implContract) ListenEvent(
+	ctx context.Context,
 	eventName string,
 	eventPrototype any,
 	unpackFunc func(vLog types.Log, event interface{}) error,
@@ -141,7 +115,7 @@ func (l *implContract) ListenContractEvent(
 	}
 
 	logs := make(chan types.Log)
-	sub, err := l.provider.SubscribeFilterLogs(context.Background(), query, logs)
+	sub, err := l.provider.SubscribeFilterLogs(ctx, query, logs)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to logs: %w", err)
 	}

@@ -19,7 +19,7 @@ import (
 type impl struct {
 	provider provider.Provider
 	address  string
-	contract contract.Contract
+	contract.Contract
 	erc165.ERC165
 }
 
@@ -40,8 +40,8 @@ func New(
 
 	return &impl{
 		provider: provider,
-		contract: contract,
 		address:  address,
+		Contract: contract,
 		ERC165:   erc165,
 	}, nil
 }
@@ -109,7 +109,7 @@ func (i *impl) IsERC721(ctx context.Context, contractAddr string) (bool, error) 
 
 func (i *impl) GetBalanceOf(ctx context.Context, account string) (*big.Int, error) {
 
-	result, err := i.contract.CallViewFunction("balanceOf", common.HexToAddress(account))
+	result, err := i.Contract.Call(context.Background(), "balanceOf", common.HexToAddress(account))
 
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (i *impl) GetBalanceOf(ctx context.Context, account string) (*big.Int, erro
 
 func (i *impl) GetOwnerOf(ctx context.Context, tokenId *big.Int) (string, error) {
 
-	result, err := i.contract.CallViewFunction("ownerOf", tokenId)
+	result, err := i.Contract.Call(context.Background(), "ownerOf", tokenId)
 
 	if err != nil {
 		return "", err
@@ -131,7 +131,7 @@ func (i *impl) GetOwnerOf(ctx context.Context, tokenId *big.Int) (string, error)
 
 func (i *impl) GetName(ctx context.Context) (string, error) {
 
-	result, err := i.contract.CallViewFunction("name")
+	result, err := i.Contract.Call(context.Background(), "name")
 
 	if err != nil {
 		return "", err
@@ -142,7 +142,7 @@ func (i *impl) GetName(ctx context.Context) (string, error) {
 
 func (i *impl) GetSymbol(ctx context.Context) (string, error) {
 
-	result, err := i.contract.CallViewFunction("symbol")
+	result, err := i.Contract.Call(context.Background(), "symbol")
 
 	if err != nil {
 		return "", err

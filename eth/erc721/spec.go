@@ -4,10 +4,12 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/dtome123/go-bcwe3/eth/contract"
 	"github.com/dtome123/go-bcwe3/eth/types"
 )
 
 type ERC721 interface {
+	contract.Contract
 	GetOwnerTokens(ctx context.Context) ([]*types.NFTBalance, error)
 	IsERC721(ctx context.Context, contractAddr string) (bool, error)
 	GetBalanceOf(ctx context.Context, account string) (*big.Int, error)
