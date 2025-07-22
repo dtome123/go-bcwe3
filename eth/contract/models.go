@@ -5,25 +5,25 @@ import (
 	"math/big"
 )
 
-type ViewSingleResult struct {
+type ContractResult struct {
 	Value interface{}
 }
 
-type ViewResults []ViewSingleResult
+type ContractResults []ContractResult
 
-func (r ViewResults) Index(index int) ViewSingleResult {
+func (r ContractResults) Index(index int) ContractResult {
 	return r[index]
 }
 
-func (r ViewResults) Len() int {
+func (r ContractResults) Len() int {
 	return len(r)
 }
 
-func (v ViewSingleResult) String() string {
+func (v ContractResult) String() string {
 	return fmt.Sprintf("%v", v.Value)
 }
 
-func (v ViewSingleResult) AsString() (string, error) {
+func (v ContractResult) AsString() (string, error) {
 	str, ok := v.Value.(string)
 	if !ok {
 		return "", fmt.Errorf("value is not a string")
@@ -31,7 +31,7 @@ func (v ViewSingleResult) AsString() (string, error) {
 	return str, nil
 }
 
-func (v ViewSingleResult) AsUint64() (uint64, error) {
+func (v ContractResult) AsUint64() (uint64, error) {
 	num, ok := v.Value.(uint64)
 	if !ok {
 		return 0, fmt.Errorf("value is not uint64")
@@ -39,7 +39,7 @@ func (v ViewSingleResult) AsUint64() (uint64, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsUnit8() (uint8, error) {
+func (v ContractResult) AsUnit8() (uint8, error) {
 	num, ok := v.Value.(uint8)
 	if !ok {
 		return 0, fmt.Errorf("value is not uint8")
@@ -47,7 +47,7 @@ func (v ViewSingleResult) AsUnit8() (uint8, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsUint16() (uint16, error) {
+func (v ContractResult) AsUint16() (uint16, error) {
 	num, ok := v.Value.(uint16)
 	if !ok {
 		return 0, fmt.Errorf("value is not uint16")
@@ -55,7 +55,7 @@ func (v ViewSingleResult) AsUint16() (uint16, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsUint32() (uint32, error) {
+func (v ContractResult) AsUint32() (uint32, error) {
 	num, ok := v.Value.(uint32)
 	if !ok {
 		return 0, fmt.Errorf("value is not uint32")
@@ -63,7 +63,7 @@ func (v ViewSingleResult) AsUint32() (uint32, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsInt64() (int64, error) {
+func (v ContractResult) AsInt64() (int64, error) {
 	num, ok := v.Value.(int64)
 	if !ok {
 		return 0, fmt.Errorf("value is not int64")
@@ -71,7 +71,7 @@ func (v ViewSingleResult) AsInt64() (int64, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsInt32() (int32, error) {
+func (v ContractResult) AsInt32() (int32, error) {
 	num, ok := v.Value.(int32)
 	if !ok {
 		return 0, fmt.Errorf("value is not int32")
@@ -79,7 +79,7 @@ func (v ViewSingleResult) AsInt32() (int32, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsInt16() (int16, error) {
+func (v ContractResult) AsInt16() (int16, error) {
 	num, ok := v.Value.(int16)
 	if !ok {
 		return 0, fmt.Errorf("value is not int16")
@@ -87,7 +87,7 @@ func (v ViewSingleResult) AsInt16() (int16, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsInt8() (int8, error) {
+func (v ContractResult) AsInt8() (int8, error) {
 	num, ok := v.Value.(int8)
 	if !ok {
 		return 0, fmt.Errorf("value is not int8")
@@ -95,7 +95,7 @@ func (v ViewSingleResult) AsInt8() (int8, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsFloat64() (float64, error) {
+func (v ContractResult) AsFloat64() (float64, error) {
 	num, ok := v.Value.(float64)
 	if !ok {
 		return 0, fmt.Errorf("value is not float64")
@@ -103,7 +103,7 @@ func (v ViewSingleResult) AsFloat64() (float64, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsBool() (bool, error) {
+func (v ContractResult) AsBool() (bool, error) {
 	num, ok := v.Value.(bool)
 	if !ok {
 		return false, fmt.Errorf("value is not bool")
@@ -111,7 +111,7 @@ func (v ViewSingleResult) AsBool() (bool, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsBytes() ([]byte, error) {
+func (v ContractResult) AsBytes() ([]byte, error) {
 	num, ok := v.Value.([]byte)
 	if !ok {
 		return nil, fmt.Errorf("value is not []byte")
@@ -119,7 +119,7 @@ func (v ViewSingleResult) AsBytes() ([]byte, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsBigInt() (*big.Int, error) {
+func (v ContractResult) AsBigInt() (*big.Int, error) {
 	num, ok := v.Value.(*big.Int)
 	if !ok {
 		return nil, fmt.Errorf("value is not *big.Int")
@@ -127,7 +127,7 @@ func (v ViewSingleResult) AsBigInt() (*big.Int, error) {
 	return num, nil
 }
 
-func (v ViewSingleResult) AsBigFloat() (*big.Float, error) {
+func (v ContractResult) AsBigFloat() (*big.Float, error) {
 	num, ok := v.Value.(*big.Float)
 	if !ok {
 		return nil, fmt.Errorf("value is not *big.Float")

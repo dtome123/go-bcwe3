@@ -49,7 +49,7 @@ func NewContract(provider provider.Provider, address, abiData string) (Contract,
 // NewCmd initializes a smart implContract interface from address and ABI data.
 
 // Call invokes a view/pure function on the contract.
-func (c *implContract) Call(ctx context.Context, method string, params ...any) ([]any, error) {
+func (c *implContract) Call(ctx context.Context, method string, params ...any) (ContractResults, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -62,7 +62,13 @@ func (c *implContract) Call(ctx context.Context, method string, params ...any) (
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+
+	contractResults := make(ContractResults, len(result))
+	for i, value := range result {
+		contractResults[i] = ContractResult{Value: value}
+	}
+
+	return contractResults, nil
 }
 
 // Transact sends a state-changing transaction to the contract.
@@ -97,7 +103,7 @@ func (c *implContract) Transact(ctx context.Context, method string, privateKey s
 	return types.WrapTx(tx), nil
 }
 
-func (c *implContract) CallViewFunction(method string, params ...interface{}) (ViewResults, error) {
+func (c *implContract) CallViewFunction(method string, params ...interface{}) (ContractResults, error) {
 
 	var result []interface{}
 
@@ -113,9 +119,9 @@ func (c *implContract) CallViewFunction(method string, params ...interface{}) (V
 		return nil, fmt.Errorf("no result returned for method %s", method)
 	}
 
-	var viewResults ViewResults
+	var viewResults ContractResults
 	for _, value := range result {
-		viewResults = append(viewResults, ViewSingleResult{Value: value})
+		viewResults = append(viewResults, ContractResult{Value: value})
 	}
 
 	return viewResults, nil
