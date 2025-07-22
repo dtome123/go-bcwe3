@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"github.com/dtome123/go-bcwe3/eth/contract"
 	"github.com/dtome123/go-bcwe3/eth/erc1155"
 	"github.com/dtome123/go-bcwe3/eth/erc20"
 	"github.com/dtome123/go-bcwe3/eth/erc721"
@@ -9,27 +8,47 @@ import (
 	"github.com/dtome123/go-bcwe3/eth/provider"
 )
 
-type Eth struct {
-	Provider provider.Provider
-	ERC721   erc721.ERC721
-	ERC1155  erc1155.ERC1155
-	ERC20    erc20.ERC20
-	Listener listener.Listener
-	Contract contract.Contract
+type impl struct {
+	provider provider.Provider
 }
 
-func NewEth(dsn string) *Eth {
+type Eth interface {
+	Close()
+	Provider() provider.Provider
+	ERC721(address string) (erc721.ERC721, error)
+	ERC1155(address string) (erc1155.ERC1155, error)
+	ERC20(address string) (erc20.ERC20, error)
+	Listener() listener.Listener
+}
+
+func NewEth(dsn string) Eth {
 
 	provider := provider.NewProvider(dsn)
-	contract, _ := contract.NewContract(provider)
 
-	return &Eth{
-		Provider: provider,
-		Listener: listener.NewListener(provider),
-		Contract: contract,
-
-		ERC721:  erc721.New(provider, contract),
-		ERC1155: erc1155.New(provider, contract),
-		ERC20:   erc20.New(provider, contract),
+	return &impl{
+		provider: provider,
 	}
+}
+
+func (eth *impl) Close() {
+	eth.provider.Close()
+}
+
+func (eth *impl) Provider() provider.Provider {
+	return eth.provider
+}
+
+func (eth *impl) Listener() listener.Listener {
+	return listener.NewListener(eth.provider)
+}
+
+func (eth *impl) ERC721(address string) (erc721.ERC721, error) {
+	return erc721.New(address, eth.provider)
+}
+func (eth *impl) ERC1155(address string) (erc1155.ERC1155, error) {
+	return erc1155.New(address, eth.provider)
+}
+
+func (eth *impl) ERC20(address string) (erc20.ERC20, error) {
+	return erc20.New(address, eth.provider)
 }

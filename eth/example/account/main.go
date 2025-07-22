@@ -8,6 +8,6 @@ func main() {
 
 	eth := eth.NewEth("wss://sepolia.infura.io/ws/v3/da05d3dc31244bd483a28d746233d32f")
 
-	defer eth.Provider.Close()
+	defer eth.Provider().Close()
 
 }

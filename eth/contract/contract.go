@@ -14,25 +14,18 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-type Contract struct {
-	provider provider.Provider
+type implContract struct {
+	address       string
+	provider      provider.Provider
+	boundContract *bind.BoundContract
 }
 
-type Cmd struct {
-	address  string
-	caller   *bind.BoundContract
-	provider provider.Provider
-}
+// NewContract initializes the implContract module with a given provider.
+func NewContract(provider provider.Provider, address, abiData string) (Contract, error) {
 
-// NewContract initializes the Contract module with a given provider.
-func NewContract(provider provider.Provider) (Contract, error) {
-	return Contract{provider: provider}, nil
-}
-
-func (c *Contract) NewCaller(address, abiData string) (*bind.BoundContract, error) {
 	address = strings.TrimSpace(address)
 	if !common.IsHexAddress(address) {
-		return nil, fmt.Errorf("invalid contract address: %s", address)
+		return nil, fmt.Errorf("invalid implContract address: %s", address)
 	}
 
 	parsedABI, err := abi.JSON(strings.NewReader(abiData))
@@ -40,29 +33,20 @@ func (c *Contract) NewCaller(address, abiData string) (*bind.BoundContract, erro
 		return nil, fmt.Errorf("failed to parse ABI: %v", err)
 	}
 
-	client := c.provider.Client()
-	caller := bind.NewBoundContract(common.HexToAddress(address), parsedABI, client, client, client)
+	client := provider.Client()
+	contract := bind.NewBoundContract(common.HexToAddress(address), parsedABI, client, client, client)
 
-	return caller, nil
-}
-
-// NewCmd initializes a smart contract interface from address and ABI data.
-func (c *Contract) NewCmd(address, abiData string) (*Cmd, error) {
-
-	caller, err := c.NewCaller(address, abiData)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Cmd{
-		address:  address,
-		caller:   caller,
-		provider: c.provider,
+	return &implContract{
+		provider:      provider,
+		address:       address,
+		boundContract: contract,
 	}, nil
 }
 
+// NewCmd initializes a smart implContract interface from address and ABI data.
+
 // Call invokes a view/pure function on the contract.
-func (c Cmd) Call(ctx context.Context, method string, params ...any) ([]any, error) {
+func (c *implContract) Call(ctx context.Context, method string, params ...any) ([]any, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -71,7 +55,7 @@ func (c Cmd) Call(ctx context.Context, method string, params ...any) ([]any, err
 	}
 
 	var result []any
-	err := c.caller.Call(&bind.CallOpts{Context: ctx}, &result, method, params...)
+	err := c.boundContract.Call(&bind.CallOpts{Context: ctx}, &result, method, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +63,7 @@ func (c Cmd) Call(ctx context.Context, method string, params ...any) ([]any, err
 }
 
 // Transact sends a state-changing transaction to the contract.
-func (e *Cmd) Transact(ctx context.Context, method string, privateKey string, params ...any) (*types.Tx, error) {
+func (c *implContract) Transact(ctx context.Context, method string, privateKey string, params ...any) (*types.Tx, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -95,17 +79,41 @@ func (e *Cmd) Transact(ctx context.Context, method string, privateKey string, pa
 		return nil, fmt.Errorf("invalid private key: %v", err)
 	}
 
-	chainID, err := e.provider.Client().NetworkID(ctx)
+	chainID, err := c.provider.Client().NetworkID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get network ID: %v", err)
 	}
 
 	auth := bind.NewKeyedTransactor(privateKeyObj, chainID)
 
-	tx, err := e.caller.Transact(auth, method, params...)
+	tx, err := c.boundContract.Transact(auth, method, params...)
 	if err != nil {
 		return nil, fmt.Errorf("transaction failed: %v", err)
 	}
 
 	return types.WrapTx(tx), nil
+}
+
+func (c *implContract) CallViewFunction(method string, params ...interface{}) (ViewResults, error) {
+
+	var result []interface{}
+
+	if method == "" {
+		return nil, fmt.Errorf("method name cannot be empty")
+	}
+
+	err := c.boundContract.Call(nil, &result, method, params...)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("no result returned for method %s", method)
+	}
+
+	var viewResults ViewResults
+	for _, value := range result {
+		viewResults = append(viewResults, ViewSingleResult{Value: value})
+	}
+
+	return viewResults, nil
 }

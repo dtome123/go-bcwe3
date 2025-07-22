@@ -10,33 +10,34 @@ import (
 
 type impl struct {
 	provider provider.Provider
-	contract.Contract
+	contract contract.Contract
 }
 
 type ERC165 interface {
 	SupportInterface(ctx context.Context, contractAddr string, interfaceIdBytes [4]byte) (bool, error)
 }
 
-func New(provider provider.Provider, contract contract.Contract) ERC165 {
+func New(address string, provider provider.Provider) (ERC165, error) {
+
+	contract, err := contract.NewContract(provider, address, constants.ERC165ABI)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &impl{
 		provider: provider,
-		Contract: contract,
-	}
+		contract: contract,
+	}, nil
 }
 
 func (i *impl) SupportInterface(ctx context.Context, contractAddr string, interfaceIdBytes [4]byte) (bool, error) {
 
-	caller, err := i.NewCaller(contractAddr, constants.ERC165ABI)
+	result, err := i.contract.CallViewFunction("supportsInterface", interfaceIdBytes)
 
 	if err != nil {
 		return false, err
 	}
 
-	isMatch, err := contract.CallViewFunction[bool](caller, "supportsInterface", interfaceIdBytes)
-
-	if err != nil {
-		return false, err
-	}
-
-	return isMatch, nil
+	return result.Index(0).AsBool()
 }

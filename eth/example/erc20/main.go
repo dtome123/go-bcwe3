@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -11,7 +12,7 @@ func main() {
 
 	eth := eth.NewEth("wss://holesky.infura.io/ws/v3/da05d3dc31244bd483a28d746233d32f")
 
-	defer eth.Provider.Close()
+	defer eth.Close()
 
 	// info, err := eth.ERC20.GetInfo(context.Background(), "0xA73aAE60B392d2E46d9693851bFcA872a9c54635")
 
@@ -28,15 +29,12 @@ func main() {
 
 	// fmt.Println("is erc20: ", isMatch)
 
-	cmd, err := eth.ERC20.NewCmd("0x55d2EC94ffc9f7A2042317022Af4B758D5A1Dc36")
+	erc20, err := eth.ERC20("0x55d2EC94ffc9f7A2042317022Af4B758D5A1Dc36")
 
-	if err != nil {
-		panic(err)
-	}
 	wei := new(big.Int)
 	wei.SetString("10000000000000000000", 10)
-	fmt.Println(cmd.BalanceOf("0x7556989c2A60E60F0c66A2b9D77079BC9F189037"))
-	tx, err := cmd.Transfer("0xa84e540D1eb5458DFC2bC25760bD64fbECb8e345", wei, "private")
+	fmt.Println(erc20.BalanceOf("0x7556989c2A60E60F0c66A2b9D77079BC9F189037"))
+	tx, err := erc20.Transfer(context.Background(), "0xa84e540D1eb5458DFC2bC25760bD64fbECb8e345", wei, "private")
 
 	if err != nil {
 		panic(err)

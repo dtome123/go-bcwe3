@@ -11,7 +11,7 @@ func main() {
 
 	eth := eth.NewEth("")
 
-	price, _ := eth.Provider.SuggestGasPrice(context.Background())
+	price, _ := eth.Provider().SuggestGasPrice(context.Background())
 
 	fmt.Println(price)
 }

@@ -21,7 +21,7 @@ func main() {
 		fmt.Println("Processing block:", block.Number)
 	}
 
-	go eth.Listener.ListenBlock(handleBlock, errChan)
+	go eth.Listener().ListenBlock(handleBlock, errChan)
 
 	go func() {
 		for err := range errChan {
