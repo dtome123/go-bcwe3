@@ -15,7 +15,7 @@ func main() {
 	// blockNumber, _ := eth.Client.BlockNumber(context.Background())
 	// fmt.Println("Current block number:", blockNumber)
 	ctx := context.Background()
-	block, _ := eth.Provider().BlockByNumber(ctx, big.NewInt(8184711))
+	block, _ := eth.GetProvider().BlockByNumber(ctx, big.NewInt(8184711))
 
 	// tx1 := block.Transactions[0]
 
@@ -34,7 +34,7 @@ func main() {
 		panic("block is nil")
 	}
 
-	isFinished, _ := eth.Provider().IsBlockFinalized(context.Background(), block.Number)
+	isFinished, _ := eth.GetProvider().IsBlockFinalized(context.Background(), block.Number)
 	fmt.Println("isFinished: ", isFinished)
 
 	fmt.Println("tx len: ", len(block.Transactions))

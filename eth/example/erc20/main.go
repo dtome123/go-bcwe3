@@ -29,7 +29,7 @@ func main() {
 
 	// fmt.Println("is erc20: ", isMatch)
 
-	erc20, err := eth.ERC20("0x55d2EC94ffc9f7A2042317022Af4B758D5A1Dc36")
+	erc20, err := eth.NewERC20("0x55d2EC94ffc9f7A2042317022Af4B758D5A1Dc36")
 
 	wei := new(big.Int)
 	wei.SetString("10000000000000000000", 10)

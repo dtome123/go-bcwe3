@@ -393,3 +393,30 @@ func (e *impl) GetCompleteTransaction(ctx context.Context, tx *types.Tx) (*types
 
 	return complete, nil
 }
+
+func (l *impl) ListenBlock(handleFunc func(block *types.Block), errorChan chan<- error) {
+	headers := make(chan *goethTypes.Header)
+	sub, err := l.client.SubscribeNewHead(context.Background(), headers)
+	if err != nil {
+		errorChan <- fmt.Errorf("error subscribing to new blocks: %w", err)
+		return
+	}
+
+	for {
+		select {
+		case err := <-sub.Err():
+			if err != nil {
+				errorChan <- fmt.Errorf("subscription error: %w", err)
+			}
+		case header := <-headers:
+
+			block, err := l.client.BlockByNumber(context.Background(), header.Number)
+			if err != nil {
+				errorChan <- fmt.Errorf("error fetching block: %w", err)
+				continue
+			}
+
+			handleFunc(types.WrapBlock(block))
+		}
+	}
+}

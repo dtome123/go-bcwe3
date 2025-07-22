@@ -41,7 +41,7 @@ func main() {
 	// 	}
 	// }
 
-	erc, err := eth.ERC721(tokenAddress)
+	erc, err := eth.NewERC721(tokenAddress)
 	balance, err := erc.GetBalanceOf(context.Background(), account)
 
 	if err != nil {

@@ -80,7 +80,7 @@ func main() {
 
 	eth := eth.NewEth(infuraURL)
 
-	finalTx, err := eth.Provider().SendSignedTransaction(context.Background(), rawTxHex)
+	finalTx, err := eth.GetProvider().SendSignedTransaction(context.Background(), rawTxHex)
 
 	if err != nil {
 		panic(err)

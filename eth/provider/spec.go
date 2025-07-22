@@ -62,4 +62,5 @@ type Provider interface {
 	SendSignedTransaction(ctx context.Context, signedTxHex string) (string, error)
 	IsBlockFinalized(ctx context.Context, blockNumber *big.Int) (bool, error)
 	GetCompleteTransaction(ctx context.Context, tx *types.Tx) (*types.CompleteTx, error)
+	ListenBlock(handleFunc func(block *types.Block), errorChan chan<- error)
 }
