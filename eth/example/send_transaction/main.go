@@ -17,7 +17,7 @@ func main() {
 	signedTx.EncodeRLP(&buf)
 	rawTxHex := hex.EncodeToString(buf.Bytes())
 
-	eth := eth.NewEth(infuraURL)
+	eth := eth.NewClient(infuraURL)
 
 	finalTx, err := eth.GetProvider().SendSignedTransaction(context.Background(), rawTxHex)
 	if err != nil {

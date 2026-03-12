@@ -10,6 +10,7 @@ import (
 	"github.com/dtome123/go-bcwe3/eth/provider"
 	"github.com/dtome123/go-bcwe3/eth/types"
 	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
 )
 
 type impl struct {
@@ -73,24 +74,40 @@ func (i *impl) BalanceOf(account string) (*big.Int, error) {
 }
 
 func (i *impl) GetInfo(ctx context.Context) (*types.ERC20Token, error) {
+	var (
+		name        string
+		symbol      string
+		decimals    uint8
+		totalSupply *big.Int
+	)
 
-	name, err := i.Name()
-	if err != nil {
-		return nil, err
-	}
+	g, _ := errgroup.WithContext(ctx)
 
-	symbol, err := i.Symbol()
-	if err != nil {
-		return nil, err
-	}
+	g.Go(func() error {
+		var err error
+		name, err = i.Name()
+		return err
+	})
 
-	decimals, err := i.Decimals()
-	if err != nil {
-		return nil, err
-	}
+	g.Go(func() error {
+		var err error
+		symbol, err = i.Symbol()
+		return err
+	})
 
-	totalSupply, err := i.TotalSupply()
-	if err != nil {
+	g.Go(func() error {
+		var err error
+		decimals, err = i.Decimals()
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		totalSupply, err = i.TotalSupply()
+		return err
+	})
+
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 

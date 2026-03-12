@@ -12,7 +12,7 @@ type impl struct {
 	provider provider.Provider
 }
 
-func NewEth(dsn string) Eth {
+func NewClient(dsn string) Eth {
 
 	provider := provider.NewProvider(dsn)
 

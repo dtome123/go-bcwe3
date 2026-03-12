@@ -4,13 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"reflect"
 	"strings"
 
 	"github.com/dtome123/go-bcwe3/eth/provider"
 	"github.com/dtome123/go-bcwe3/eth/types"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -98,47 +95,4 @@ func (c *implContract) Transact(ctx context.Context, method string, privateKey s
 	}
 
 	return types.WrapTx(tx), nil
-}
-
-func (l *implContract) ListenEvent(
-	ctx context.Context,
-	eventName string,
-	eventPrototype any,
-	unpackFunc func(vLog types.Log, event interface{}) error,
-	handleFunc func(event interface{}),
-) error {
-
-	address := common.HexToAddress(l.address)
-
-	query := ethereum.FilterQuery{
-		Addresses: []common.Address{address},
-	}
-
-	logs := make(chan types.Log)
-	sub, err := l.provider.SubscribeFilterLogs(ctx, query, logs)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to logs: %w", err)
-	}
-
-	go func() {
-		for {
-			select {
-			case err := <-sub.Err():
-				log.Println("Subscription error:", err)
-			case vLog := <-logs:
-				// Clone prototype
-				eventCopy := reflect.New(reflect.TypeOf(eventPrototype).Elem()).Interface()
-
-				err := unpackFunc(vLog, eventCopy)
-				if err != nil {
-					log.Println("Unpack failed:", err)
-					continue
-				}
-
-				handleFunc(eventCopy)
-			}
-		}
-	}()
-
-	return nil
 }
